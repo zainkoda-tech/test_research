@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مول التجار - خدمات</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root {
+            --primary: #1e2a3a;      /* كحلي داكن */
+            --secondary: #ff9900;     /* ذهبي */
+            --background: #f5f7fa;    /* خلفية فاتحة */
+            --text: #1e293b;          /* نص كحلي */
+            --card-bg: #ffffff;       /* بطاقات بيضاء */
+            --button: #ff9900;        /* أزرار ذهبية */
+            --button-hover: #e88a00;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --warning: #f59e0b;
+        }
+        body { background: var(--background); min-height: 100vh; padding: 20px; color: var(--text); }
+        .header { background: var(--primary); padding: 15px 30px; border-radius: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .logo { font-size: 24px; font-weight: bold; color: var(--secondary); cursor: pointer; }
+        .nav-links { display: flex; gap: 15px; }
+        .nav-links a { color: white; text-decoration: none; padding: 5px 10px; border-radius: 5px; }
+        .nav-links a:hover { background: var(--secondary); color: var(--primary); }
+        .cart-btn { background: var(--button); color: var(--primary); border: none; padding: 8px 15px; border-radius: 25px; font-weight: bold; cursor: pointer; }
+
+        .services-container { max-width: 1200px; margin: 20px auto; }
+
+        .filters { background: var(--card-bg); padding: 20px; border-radius: 15px; margin-bottom: 30px; display: flex; gap: 15px; flex-wrap: wrap; align-items: center; border: 1px solid var(--border); }
+        .filter-select { padding: 8px; border-radius: 5px; background: var(--background); color: var(--text); border: 1px solid var(--secondary); min-width: 150px; }
+        .add-service-btn { background: var(--button); color: var(--primary); border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer; font-weight: bold; }
+
+        .services-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 20px; }
+
+        @media (max-width: 1024px) { .services-grid { grid-template-columns: repeat(2, 1fr); } }
+        @media (max-width: 768px) { .services-grid { grid-template-columns: 1fr; } }
+
+        .service-card { background: var(--card-bg); border-radius: 15px; padding: 20px; border: 1px solid var(--border); transition: all 0.3s ease; position: relative; }
+        .service-card:hover { transform: translateY(-5px); box-shadow: 0 10px 30px rgba(255,153,0,0.2); border-color: var(--secondary); }
+
+        .service-controls { position: absolute; top: 10px; left: 10px; display: flex; gap: 5px; opacity: 0; transition: opacity 0.3s; }
+        .service-card:hover .service-controls { opacity: 1; }
+        .edit-service-btn { background: var(--info); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+        .delete-service-btn { background: var(--danger); color: white; border: none; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-size: 12px; }
+
+        .service-name { font-size: 18px; font-weight: bold; color: var(--text); margin-bottom: 5px; }
+        .service-profession { color: var(--secondary); font-size: 14px; margin-bottom: 10px; }
+        .service-rating { color: gold; font-size: 14px; margin-bottom: 10px; }
+        .service-meta { color: #94a3b8; font-size: 13px; margin-bottom: 10px; }
+        .service-meta div { margin: 5px 0; }
+        .service-description { color: var(--text); font-size: 14px; margin: 15px 0; padding: 10px; background: var(--background); border-radius: 8px; }
+        .service-contact { display: flex; gap: 10px; margin-top: 15px; }
+        .contact-btn { background: #25D366; color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; flex: 1; text-align: center; text-decoration: none; }
+        .call-btn { background: var(--info); color: white; border: none; padding: 8px; border-radius: 5px; cursor: pointer; flex: 1; text-align: center; text-decoration: none; }
+
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); justify-content: center; align-items: center; z-index: 1000; }
+        .modal-content { background: var(--card-bg); padding: 30px; border-radius: 15px; max-width: 500px; width: 90%; border: 2px solid var(--secondary); max-height: 90vh; overflow-y: auto; }
+        .modal-title { color: var(--secondary); font-size: 24px; margin-bottom: 20px; text-align: center; }
+        .modal-input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid var(--secondary); border-radius: 5px; background: var(--background); color: var(--text); }
+        .modal-btn { background: var(--button); color: var(--primary); border: none; padding: 10px; border-radius: 5px; cursor: pointer; width: 100%; font-weight: bold; margin-top: 10px; }
+        .close-btn { background: var(--danger); color: white; border: none; padding: 10px; border-radius: 5px; cursor: pointer; width: 100%; margin-top: 10px; }
+
+        .loading { text-align: center; padding: 50px; color: var(--text); }
+        .error { text-align: center; padding: 50px; color: var(--danger); }
+
+        .owner-badge { background: var(--secondary); color: var(--primary); font-size: 10px; padding: 2px 5px; border-radius: 3px; margin-right: 5px; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo" onclick="goHome()">🛍️ مول التجار</div>
+        <div class="nav-links">
+            <a href="index.html">الرئيسية</a>
+            <a href="services.html">خدمات</a>
+            <a href="my-store.html">متجري</a>
+            <a href="upgrade.html">ترقية</a>
+            <a href="sellers.html">التجار</a>
+        </div>
+        <div>
+            <button onclick="goToCart()" class="cart-btn">🛒 (<span id="cart-count">0</span>)</button>
+        </div>
+    </div>
+
+    <div class="services-container">
+        <div class="filters">
+            <select id="professionFilter" class="filter-select">
+                <option value="all">كل المهن</option>
+                <option value="سباك">سباك</option>
+                <option value="نجار">نجار</option>
+                <option value="دكتور">دكتور</option>
+                <option value="مدرس">مدرس</option>
+                <option value="كهربائي">كهربائي</option>
+            </select>
+
+            <select id="locationFilter" class="filter-select">
+                <option value="all">كل المناطق</option>
+                <option value="الجمالية">الجمالية</option>
+                <option value="المنزلة">المنزلة</option>
+                <option value="الإسكندرية الجديدة">الإسكندرية الجديدة</option>
+                <option value="الدقهلية">الدقهلية</option>
+                <option value="القاهرة">القاهرة</option>
+                <option value="الجيزة">الجيزة</option>
+            </select>
+
+            <button class="add-service-btn" onclick="showAddServiceModal()">➕ أضف خدمتك</button>
+        </div>
+
+        <div class="services-grid" id="services-grid">
+            <div class="loading">جاري تحميل الخدمات...</div>
+        </div>
+    </div>
+
+    <!-- نافذة إضافة/تعديل خدمة -->
+    <div id="serviceModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-title" id="modalTitle">➕ إضافة خدمة جديدة</div>
+            <input type="text" id="serviceName" class="modal-input" placeholder="اسمك">
+            <input type="text" id="serviceProfession" class="modal-input" placeholder="المهنة">
+            <input type="text" id="servicePhone" class="modal-input" placeholder="رقم الهاتف">
+            <input type="number" id="serviceRate" class="modal-input" placeholder="الأجر التقريبي">
+            <select id="serviceRateType" class="modal-input">
+                <option value="hour">لكل ساعة</option>
+                <option value="visit">لكل زيارة</option>
+            </select>
+            <select id="serviceLocation" class="modal-input">
+                <option value="">اختر المنطقة</option>
+                <option value="الجمالية">الجمالية</option>
+                <option value="المنزلة">المنزلة</option>
+                <option value="الإسكندرية الجديدة">الإسكندرية الجديدة</option>
+                <option value="الدقهلية">الدقهلية</option>
+                <option value="القاهرة">القاهرة</option>
+                <option value="الجيزة">الجيزة</option>
+            </select>
+            <textarea id="serviceDesc" class="modal-input" placeholder="وصف مختصر لخدمتك" rows="3"></textarea>
+            <input type="hidden" id="editingServiceId">
+            <button onclick="saveService()" class="modal-btn" id="saveBtn">💾 حفظ الخدمة</button>
+            <button onclick="hideServiceModal()" class="close-btn">❌ إلغاء</button>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbWuJ8CP3Sdq7KLGewsQEVMlG6viq7R1Y",
+            authDomain: "g10-sovereign.firebaseapp.com",
+            databaseURL: "https://g10-sovereign-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "g10-sovereign",
+            storageBucket: "g10-sovereign.firebasestorage.app",
+            messagingSenderId: "948439120882",
+            appId: "1:948439120882:web:1553728c80891ca2a3496b"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const servicesRef = database.ref('Services');
+
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        let allServices = {};
+        let currentUser = null;
+
+        // ========== نظام الأدوار ==========
+        let currentUserRole = null;
+
+        // جلب دور المستخدم من Firebase
+        async function getUserRole(uid) {
+            try {
+                const snap = await database.ref(`users/${uid}/role`).once('value');
+                return snap.val() || 'user';
+            } catch (error) {
+                console.error('خطأ في جلب الدور:', error);
+                return 'user';
+            }
+        }
+
+        // هل يقدر يضيف خدمة؟ (يدعم الأدوار الجديدة)
+        function canAddService() {
+            return currentUserRole === 'seller_monthly' ||
+                   currentUserRole === 'seller_yearly' ||
+                   currentUserRole === 'owner' ||
+                   currentUserRole === 'admin';
+        }
+
+        // هل هو مالك الخدمة؟
+        function isServiceOwner(providerId) {
+            return currentUser && providerId === currentUser.uid;
+        }
+
+        // هل هو owner أو admin؟
+        function isAdminOrOwner() {
+            return currentUserRole === 'owner' || currentUserRole === 'admin';
+        }
+        // =================================
+
+        function goHome() { window.location.href = 'index.html'; }
+        function goToCart() { window.location.href = 'index.html#cart-panel'; }
+
+        function updateCartCount() {
+            document.getElementById('cart-count').textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+        }
+
+        firebase.auth().onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+
+                // نشوف لو المستخدم موجود في users ولا لأ
+                const userSnap = await database.ref(`users/${user.uid}`).once('value');
+
+                if (!userSnap.exists()) {
+                    // مستخدم جديد — نضيفه بدور trial
+                    const trialEnd = Date.now() + (30 * 24 * 60 * 60 * 1000);
+                    await database.ref(`users/${user.uid}`).set({
+                        email: user.email,
+                        role: 'trial',
+                        trial_end: trialEnd,
+                        products_limit: 5,
+                        products_count: 0,
+                        created_at: new Date().toISOString()
+                    });
+                    currentUserRole = 'trial';
+                } else {
+                    currentUserRole = userSnap.val().role || 'user';
+                }
+
+                console.log('👤 مستخدم:', user.email, '| الدور:', currentUserRole);
+            } else {
+                currentUser = null;
+                currentUserRole = null;
+            }
+            loadServices();
+        });
+
+        function showAddServiceModal() {
+            if (!currentUser) {
+                alert('⚠️ يجب تسجيل الدخول أولاً');
+                return;
+            }
+
+            if (!canAddService()) {
+                alert('⚠️ فقط البائعين (شهري/سنوي) أو المالك يمكنهم إضافة خدمات. يرجى الترقية من صفحة الترقية.');
+                window.location.href = 'upgrade.html';
+                return;
+            }
+
+            document.getElementById('modalTitle').textContent = '➕ إضافة خدمة جديدة';
+            document.getElementById('editingServiceId').value = '';
+            document.getElementById('serviceName').value = '';
+            document.getElementById('serviceProfession').value = '';
+            document.getElementById('servicePhone').value = '';
+            document.getElementById('serviceRate').value = '';
+            document.getElementById('serviceRateType').value = 'hour';
+            document.getElementById('serviceLocation').value = '';
+            document.getElementById('serviceDesc').value = '';
+            document.getElementById('serviceModal').style.display = 'flex';
+        }
+
+        function showEditServiceModal(serviceId, service) {
+            if (!currentUser) {
+                alert('⚠️ يجب تسجيل الدخول أولاً');
+                return;
+            }
+
+            // لو مش مالك الخدمة ومش owner/admin
+            if (!isServiceOwner(service.provider_id) && !isAdminOrOwner()) {
+                alert('⛔ ليس لديك صلاحية تعديل هذه الخدمة');
+                return;
+            }
+
+            document.getElementById('modalTitle').textContent = '✏️ تعديل الخدمة';
+            document.getElementById('editingServiceId').value = serviceId;
+            document.getElementById('serviceName').value = service.provider_name || '';
+            document.getElementById('serviceProfession').value = service.profession || '';
+            document.getElementById('servicePhone').value = service.phone || '';
+            document.getElementById('serviceRate').value = service.rate || '';
+            document.getElementById('serviceRateType').value = service.rate_type || 'hour';
+            document.getElementById('serviceLocation').value = service.location || '';
+            document.getElementById('serviceDesc').value = service.description || '';
+            document.getElementById('serviceModal').style.display = 'flex';
+        }
+
+        function hideServiceModal() {
+            document.getElementById('serviceModal').style.display = 'none';
+        }
+
+        function saveService() {
+            if (!currentUser) { alert('يجب تسجيل الدخول'); return; }
+
+            const name = document.getElementById('serviceName').value.trim();
+            const profession = document.getElementById('serviceProfession').value.trim();
+            const phone = document.getElementById('servicePhone').value.trim();
+            const rate = parseFloat(document.getElementById('serviceRate').value);
+            const rateType = document.getElementById('serviceRateType').value;
+            const location = document.getElementById('serviceLocation').value;
+            const desc = document.getElementById('serviceDesc').value.trim();
+            const editingId = document.getElementById('editingServiceId').value;
+
+            if (!name || !profession || !phone || !rate || !location) {
+                alert('⚠️ جميع الحقول مطلوبة');
+                return;
+            }
+
+            const serviceData = {
+                provider_id: currentUser.uid,
+                provider_name: name,
+                profession,
+                phone,
+                rate,
+                rate_type: rateType,
+                location,
+                description: desc,
+                rating: 0,
+                reviews_count: 0,
+                updated_at: new Date().toISOString()
+            };
+
+            if (editingId) {
+                servicesRef.child(editingId).update(serviceData).then(() => {
+                    alert('✅ تم تحديث الخدمة');
+                    hideServiceModal();
+                    loadServices();
+                });
+            } else {
+                serviceData.created_at = new Date().toISOString();
+                servicesRef.push(serviceData).then(() => {
+                    alert('✅ تم إضافة الخدمة');
+                    hideServiceModal();
+                    loadServices();
+                });
+            }
+        }
+
+        function deleteService(serviceId) {
+            if (!currentUser) {
+                alert('يجب تسجيل الدخول');
+                return;
+            }
+
+            servicesRef.child(serviceId).once('value').then(snap => {
+                const service = snap.val();
+                if (!service) return;
+
+                // لو مش مالك الخدمة ومش owner/admin
+                if (!isServiceOwner(service.provider_id) && !isAdminOrOwner()) {
+                    alert('⛔ ليس لديك صلاحية حذف هذه الخدمة');
+                    return;
+                }
+
+                if (confirm('⚠️ هل أنت متأكد من حذف هذه الخدمة؟')) {
+                    servicesRef.child(serviceId).remove().then(() => {
+                        alert('✅ تم حذف الخدمة');
+                        loadServices();
+                    });
+                }
+            });
+        }
+
+        function loadServices() {
+            servicesRef.once('value').then(snap => {
+                allServices = snap.val() || {};
+                displayServices(allServices);
+            });
+        }
+
+        function displayServices(services) {
+            const grid = document.getElementById('services-grid');
+            grid.innerHTML = '';
+
+            const professionFilter = document.getElementById('professionFilter').value;
+            const locationFilter = document.getElementById('locationFilter').value;
+
+            let filtered = {};
+            Object.keys(services).forEach(id => {
+                const s = services[id];
+                if (professionFilter !== 'all' && s.profession !== professionFilter) return;
+                if (locationFilter !== 'all' && s.location !== locationFilter) return;
+                filtered[id] = s;
+            });
+
+            if (Object.keys(filtered).length === 0) {
+                grid.innerHTML = '<div style="grid-column:1/-1; text-align:center; color:#94a3b8;">لا توجد خدمات</div>';
+                return;
+            }
+
+            Object.keys(filtered).forEach(id => {
+                const s = filtered[id];
+                const isOwner = currentUser && s.provider_id === currentUser.uid;
+                const canEdit = isOwner || isAdminOrOwner();
+
+                let controlsHtml = '';
+                if (canEdit) {
+                    controlsHtml = `
+                        <div class="service-controls">
+                            <button onclick='showEditServiceModal("${id}", ${JSON.stringify(s).replace(/'/g, "\\'")})' class="edit-service-btn">✏️ تعديل</button>
+                            <button onclick='deleteService("${id}")' class="delete-service-btn">🗑️ حذف</button>
+                        </div>
+                    `;
+                }
+
+                grid.innerHTML += `
+                    <div class="service-card">
+                        ${controlsHtml}
+                        <div class="service-name">
+                            ${isOwner ? '<span class="owner-badge">👤 خدمتي</span>' : ''}
+                            ${s.provider_name}
+                        </div>
+                        <div class="service-profession">⚡ ${s.profession}</div>
+                        <div class="service-rating">⭐ ${s.rating || '0.0'} (${s.reviews_count || 0})</div>
+                        <div class="service-meta">
+                            <div>💰 ${s.rate || 0} EGP / ${s.rate_type === 'hour' ? 'ساعة' : 'زيارة'}</div>
+                            <div>📍 ${s.location || 'غير محدد'}</div>
+                        </div>
+                        <div class="service-description">${s.description || 'لا يوجد وصف'}</div>
+                        <div class="service-contact">
+                            <a href="https://wa.me/${s.phone}" target="_blank" class="contact-btn">📱 واتساب</a>
+                            <a href="tel:${s.phone}" class="call-btn">📞 اتصال</a>
+                        </div>
+                    </div>
+                `;
+            });
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            updateCartCount();
+            document.getElementById('professionFilter').addEventListener('change', () => displayServices(allServices));
+            document.getElementById('locationFilter').addEventListener('change', () => displayServices(allServices));
+        });
+    </script>
+</body>
+</html>

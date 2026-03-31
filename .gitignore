@@ -1,0 +1,26 @@
+# 🔒 ملفات سرية
+.env
+serviceAccountKey.json
+
+# 🛠️ ملفات البناء والتوزيع (PyInstaller وغيره)
+dist/
+build/
+*.spec
+
+# ⚙️ ملفات بايثون المؤقتة
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# 📦 بيئات افتراضية
+venv/
+myenv/
+
+# 🗂️ ملفات النظام
+.DS_Store
+Thumbs.db
+
+# 📝 ملفات لوج أو تجارب
+*.log
+

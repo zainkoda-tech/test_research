@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مول التجار - ترقية الحساب</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root {
+            --primary: #1e2a3a;      /* كحلي داكن */
+            --secondary: #ff9900;     /* ذهبي */
+            --background: #f5f7fa;    /* خلفية فاتحة */
+            --text: #1e293b;          /* نص كحلي */
+            --card-bg: #ffffff;       /* بطاقات بيضاء */
+            --button: #ff9900;        /* أزرار ذهبية */
+            --button-hover: #e88a00;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --warning: #f59e0b;
+        }
+        body { background: var(--background); min-height: 100vh; padding: 20px; color: var(--text); }
+        .header { background: var(--primary); padding: 15px 30px; border-radius: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .logo { font-size: 24px; font-weight: bold; color: var(--secondary); cursor: pointer; }
+        .nav-links { display: flex; gap: 15px; }
+        .nav-links a { color: white; text-decoration: none; padding: 5px 10px; border-radius: 5px; }
+        .nav-links a:hover { background: var(--secondary); color: var(--primary); }
+        .cart-btn { background: var(--button); color: var(--primary); border: none; padding: 8px 15px; border-radius: 25px; font-weight: bold; cursor: pointer; }
+
+        .upgrade-container {
+            max-width: 800px;
+            margin: 40px auto;
+            background: var(--card-bg);
+            border-radius: 30px;
+            padding: 30px;
+            border: 2px solid var(--secondary);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .upgrade-title {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--secondary);
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .plans {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .plan-card {
+            background: var(--background);
+            border-radius: 20px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .plan-card:hover {
+            transform: scale(1.05);
+            box-shadow: 0 10px 30px rgba(255,153,0,0.2);
+            border-color: var(--secondary);
+        }
+
+        .plan-name {
+            font-size: 20px;
+            font-weight: bold;
+            color: var(--secondary);
+            margin-bottom: 10px;
+        }
+
+        .plan-price {
+            font-size: 24px;
+            font-weight: bold;
+            color: var(--text);
+            margin-bottom: 15px;
+        }
+
+        .plan-price small {
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        .plan-features {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .plan-features li {
+            margin: 8px 0;
+        }
+
+        .plan-btn {
+            background: var(--button);
+            color: var(--primary);
+            border: none;
+            padding: 10px 20px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            width: 100%;
+            transition: all 0.3s ease;
+        }
+
+        .plan-btn:hover {
+            transform: scale(1.05);
+            background: var(--button-hover);
+            box-shadow: 0 5px 15px rgba(255,153,0,0.4);
+        }
+
+        .plan-btn:disabled {
+            background: var(--border);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .current-plan {
+            text-align: center;
+            color: var(--text);
+            margin-bottom: 20px;
+            padding: 15px;
+            background: var(--background);
+            border-radius: 15px;
+            border: 1px solid var(--border);
+        }
+
+        .current-plan span {
+            color: var(--secondary);
+            font-weight: bold;
+        }
+
+        .whatsapp-contact {
+            text-align: center;
+            margin-top: 30px;
+            padding: 20px;
+            background: var(--background);
+            border-radius: 15px;
+            border: 1px solid var(--border);
+        }
+
+        .whatsapp-contact p {
+            color: var(--text);
+            margin-bottom: 10px;
+        }
+
+        .whatsapp-btn {
+            background: #25D366;
+            color: white;
+            border: none;
+            padding: 10px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            text-decoration: none;
+            display: inline-block;
+            transition: all 0.3s ease;
+        }
+
+        .whatsapp-btn:hover {
+            transform: scale(1.05);
+            box-shadow: 0 5px 15px rgba(37,211,102,0.4);
+        }
+
+        .loading { text-align: center; padding: 50px; color: var(--text); }
+        .error { text-align: center; padding: 50px; color: var(--danger); }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo" onclick="goHome()">🛍️ مول التجار</div>
+        <div class="nav-links">
+            <a href="index.html">الرئيسية</a>
+            <a href="services.html">خدمات</a>
+            <a href="my-store.html">متجري</a>
+            <a href="upgrade.html">ترقية</a>
+            <a href="sellers.html">التجار</a>
+        </div>
+        <div>
+            <button onclick="goToCart()" class="cart-btn">🛒 (<span id="cart-count">0</span>)</button>
+        </div>
+    </div>
+
+    <div class="upgrade-container">
+        <div class="upgrade-title">🚀 ترقية حسابك</div>
+
+        <div id="currentPlan" class="current-plan">
+            جاري تحميل معلومات حسابك...
+        </div>
+
+        <div class="plans" id="plans">
+            <!-- الخطط هتتضاف هنا عن طريق JavaScript -->
+        </div>
+
+        <div class="whatsapp-contact">
+            <p>للاستفسار أو الترقية عبر واتساب، تواصل معنا مباشرة</p>
+            <a href="https://wa.me/201005032186" target="_blank" class="whatsapp-btn">📱 واتساب</a>
+        </div>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbWuJ8CP3Sdq7KLGewsQEVMlG6viq7R1Y",
+            authDomain: "g10-sovereign.firebaseapp.com",
+            databaseURL: "https://g10-sovereign-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "g10-sovereign",
+            storageBucket: "g10-sovereign.firebasestorage.app",
+            messagingSenderId: "948439120882",
+            appId: "1:948439120882:web:1553728c80891ca2a3496b"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+        function goHome() {
+            window.location.href = 'index.html';
+        }
+
+        function goToCart() {
+            window.location.href = 'index.html#cart-panel';
+        }
+
+        function updateCartCount() {
+            document.getElementById('cart-count').textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+        }
+
+        // الخطط مع ربطها بالأدوار
+        const plans = [
+            {
+                id: 'trial',
+                name: 'شهر مجاني',
+                price: '0$',
+                period: '30 يوم',
+                role: 'trial',
+                features: ['✓ إضافة 5 منتجات', '✓ تجربة كاملة', '✓ بدون دفع']
+            },
+            {
+                id: 'monthly',
+                name: 'شهري',
+                price: '5$',
+                period: '/شهر',
+                role: 'seller_monthly',
+                features: ['✓ إضافة منتجات غير محدودة', '✓ تعديل وحذف المنتجات', '✓ دعم فني']
+            },
+            {
+                id: 'yearly',
+                name: 'سنوي',
+                price: '50$',
+                period: '/سنة',
+                role: 'seller_yearly',
+                features: ['✓ كل مميزات الشهري', '✓ خصم 15%', '✓ أولوية الدعم الفني']
+            },
+            {
+                id: 'lifetime',
+                name: 'مدى الحياة',
+                price: '100$',
+                period: 'مرة واحدة',
+                role: 'owner',
+                features: ['✓ كل المميزات', '✓ تحديثات مجانية مدى الحياة', '✓ دعم VIP']
+            }
+        ];
+
+        function displayPlans(currentRole) {
+            const plansDiv = document.getElementById('plans');
+            plansDiv.innerHTML = '';
+
+            plans.forEach(plan => {
+                const isCurrent = currentRole === plan.role || (currentRole === 'owner' && plan.role === 'owner');
+
+                const card = document.createElement('div');
+                card.className = 'plan-card';
+                card.style.border = isCurrent ? `2px solid ${getComputedStyle(document.documentElement).getPropertyValue('--secondary')}` : `1px solid var(--border)`;
+
+                let featuresHtml = '';
+                plan.features.forEach(f => {
+                    featuresHtml += `<li>${f}</li>`;
+                });
+
+                let buttonHtml = '';
+                if (isCurrent) {
+                    buttonHtml = '<button class="plan-btn" disabled>الخطة الحالية</button>';
+                } else if (currentRole === 'owner') {
+                    buttonHtml = '<button class="plan-btn" disabled>أنت مالك بالفعل</button>';
+                } else {
+                    buttonHtml = `<button class="plan-btn" onclick="upgradeTo('${plan.id}', '${plan.role}')">ترقية</button>`;
+                }
+
+                card.innerHTML = `
+                    <div class="plan-name">${plan.name}</div>
+                    <div class="plan-price">${plan.price} <small>${plan.period}</small></div>
+                    <ul class="plan-features">${featuresHtml}</ul>
+                    ${buttonHtml}
+                `;
+
+                plansDiv.appendChild(card);
+            });
+        }
+
+        function upgradeTo(planId, role) {
+            const user = firebase.auth().currentUser;
+            if (!user) {
+                alert('⚠️ يجب تسجيل الدخول أولاً');
+                window.location.href = 'index.html';
+                return;
+            }
+
+            // لو الخطة مجانية (trial)
+            if (planId === 'trial') {
+                const trialEnd = Date.now() + (30 * 24 * 60 * 60 * 1000); // 30 يوم
+
+                database.ref('users/' + user.uid).update({
+                    role: 'trial',
+                    trial_end: trialEnd,
+                    products_limit: 5,
+                    products_count: 0,
+                    plan: 'trial'
+                }).then(() => {
+                    alert('✅ تم تفعيل الفترة التجريبية لمدة 30 يوم');
+                    location.reload();
+                });
+                return;
+            }
+
+            // للخطط المدفوعة -> نحول على واتساب
+            const planNames = {
+                monthly: 'شهري',
+                yearly: 'سنوي',
+                lifetime: 'مدى الحياة'
+            };
+
+            const message = `🛍️ طلب ترقية حسابي إلى الخطة ${planNames[planId]}\n\nالرجاء التواصل معي لتأكيد الدفع.\n\nالبريد الإلكتروني: ${user.email}`;
+            window.open(`https://wa.me/201005032186?text=${encodeURIComponent(message)}`, '_blank');
+
+            // نسجل طلب الترقية في Firebase عشان المالك يشوفه
+            database.ref('upgrade_requests').push({
+                uid: user.uid,
+                email: user.email,
+                plan: planId,
+                role: role,
+                date: new Date().toISOString(),
+                status: 'pending'
+            });
+        }
+
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                database.ref('users/' + user.uid).once('value').then(snap => {
+                    const userData = snap.val() || {};
+                    let currentRole = userData.role || 'user';
+                    let updated = false;
+
+                    // التحقق من انتهاء الفترة التجريبية
+                    if (currentRole === 'trial' && userData.trial_end && userData.trial_end < Date.now()) {
+                        database.ref('users/' + user.uid).update({ role: 'user' });
+                        currentRole = 'user';
+                        updated = true;
+                        alert('⚠️ انتهت الفترة التجريبية. يمكنك الاشتراك في إحدى الخطط المدفوعة للاستمرار.');
+                    }
+
+                    // التحقق من انتهاء الاشتراك الشهري/السنوي
+                    if ((currentRole === 'seller_monthly' || currentRole === 'seller_yearly') &&
+                        userData.subscription_end && new Date(userData.subscription_end) < new Date()) {
+                        database.ref('users/' + user.uid).update({ role: 'user' });
+                        currentRole = 'user';
+                        updated = true;
+                        alert('⚠️ انتهت صلاحية اشتراكك. قم بالترقية للاستمرار.');
+                    }
+
+                    let planText = '';
+                    let expiryText = '';
+
+                    switch(currentRole) {
+                        case 'trial':
+                            planText = 'شهر مجاني';
+                            if (userData.trial_end && !updated) {
+                                const daysLeft = Math.ceil((userData.trial_end - Date.now()) / (24*60*60*1000));
+                                if (daysLeft > 0) {
+                                    expiryText = ` (${daysLeft} يوم متبقي)`;
+                                }
+                            }
+                            break;
+                        case 'seller_monthly':
+                            planText = 'شهري';
+                            if (userData.subscription_end) {
+                                const endDate = new Date(userData.subscription_end);
+                                const daysLeft = Math.ceil((endDate - new Date()) / (24*60*60*1000));
+                                if (daysLeft > 0) {
+                                    expiryText = ` (ينتهي بعد ${daysLeft} يوم)`;
+                                }
+                            }
+                            break;
+                        case 'seller_yearly':
+                            planText = 'سنوي';
+                            if (userData.subscription_end) {
+                                const endDate = new Date(userData.subscription_end);
+                                const daysLeft = Math.ceil((endDate - new Date()) / (24*60*60*1000));
+                                if (daysLeft > 0) {
+                                    expiryText = ` (ينتهي بعد ${daysLeft} يوم)`;
+                                }
+                            }
+                            break;
+                        case 'owner':
+                            planText = 'مالك (مدى الحياة)';
+                            break;
+                        default:
+                            planText = 'مجاني';
+                    }
+
+                    document.getElementById('currentPlan').innerHTML = `خطتك الحالية: <span>${planText}${expiryText}</span>`;
+                    displayPlans(currentRole);
+                });
+            } else {
+                window.location.href = 'index.html';
+            }
+        });
+
+        updateCartCount();
+    </script>
+</body>
+</html>

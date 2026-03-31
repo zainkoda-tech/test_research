@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>تفاصيل المنتج - مول التجار</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root {
+            --primary: #1e2a3a;
+            --secondary: #ff9900;
+            --background: #f5f7fa;
+            --text: #1e293b;
+            --card-bg: #ffffff;
+            --button: #ff9900;
+            --button-hover: #e88a00;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --warning: #f59e0b;
+        }
+        body { background: var(--background); min-height: 100vh; padding: 20px; color: var(--text); }
+        .header { background: var(--primary); padding: 15px 30px; border-radius: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .logo { font-size: 24px; font-weight: bold; color: var(--secondary); cursor: pointer; }
+        .cart-btn { background: var(--button); color: var(--primary); border: none; padding: 8px 15px; border-radius: 25px; font-weight: bold; cursor: pointer; }
+
+        .product-container {
+            background: var(--card-bg);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 800px;
+            margin: 20px auto;
+            border: 1px solid var(--border);
+            box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+        }
+
+        .seller-info {
+            background: var(--background);
+            padding: 15px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 10px;
+        }
+        .seller-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--secondary);
+            text-decoration: none;
+            cursor: pointer;
+        }
+        .seller-name:hover {
+            text-decoration: underline;
+        }
+        .seller-badge {
+            background: var(--secondary);
+            color: var(--primary);
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .product-image {
+            width: 100%;
+            max-width: 400px;
+            height: auto;
+            margin: 0 auto 20px;
+            border-radius: 15px;
+            overflow: hidden;
+            border: 2px solid var(--secondary);
+        }
+        .product-image img {
+            width: 100%;
+            height: auto;
+            display: block;
+        }
+
+        .product-name {
+            font-size: 28px;
+            font-weight: bold;
+            color: var(--text);
+            margin-bottom: 10px;
+            text-align: center;
+        }
+
+        .product-price {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--secondary);
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .product-stock {
+            font-size: 16px;
+            color: #94a3b8;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .product-desc {
+            color: var(--text);
+            font-size: 16px;
+            line-height: 1.6;
+            margin-bottom: 30px;
+            padding: 20px;
+            background: var(--background);
+            border-radius: 10px;
+        }
+
+        .quantity-section {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 30px;
+        }
+        .quantity-input {
+            width: 80px;
+            padding: 10px;
+            border: 1px solid var(--secondary);
+            border-radius: 5px;
+            background: var(--background);
+            color: var(--text);
+            text-align: center;
+            font-size: 16px;
+        }
+
+        .add-to-cart-btn {
+            background: var(--button);
+            color: var(--primary);
+            border: none;
+            padding: 15px 40px;
+            border-radius: 30px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            width: fit-content;
+            margin: 0 auto 20px;
+            display: block;
+            transition: all 0.3s ease;
+        }
+        .add-to-cart-btn:hover {
+            transform: scale(1.05);
+            background: var(--button-hover);
+            box-shadow: 0 5px 15px rgba(255,153,0,0.4);
+        }
+        .add-to-cart-btn:disabled {
+            background: var(--border);
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .back-links {
+            text-align: center;
+            margin-top: 20px;
+            display: flex;
+            gap: 20px;
+            justify-content: center;
+            flex-wrap: wrap;
+        }
+        .back-links a {
+            color: var(--secondary);
+            text-decoration: none;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .back-links a:hover {
+            text-decoration: underline;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 50px;
+            color: var(--text);
+            font-size: 18px;
+        }
+        .error {
+            text-align: center;
+            padding: 50px;
+            color: var(--danger);
+            font-size: 18px;
+        }
+
+        @media screen and (max-width: 768px) {
+            .product-container { padding: 20px; }
+            .product-name { font-size: 24px; }
+            .product-price { font-size: 28px; }
+            .seller-info { flex-direction: column; text-align: center; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo" onclick="goHome()">🛍️ مول التجار</div>
+        <div>
+            <button onclick="goToCart()" class="cart-btn">🛒 (<span id="cart-count">0</span>)</button>
+        </div>
+    </div>
+
+    <div id="product-details" class="product-container">
+        <div class="loading">⏳ جاري تحميل المنتج...</div>
+    </div>
+
+    <div class="back-links">
+        <a href="index.html">← العودة للمتجر</a>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbWuJ8CP3Sdq7KLGewsQEVMlG6viq7R1Y",
+            authDomain: "g10-sovereign.firebaseapp.com",
+            databaseURL: "https://g10-sovereign-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "g10-sovereign",
+            storageBucket: "g10-sovereign.firebasestorage.app",
+            messagingSenderId: "948439120882",
+            appId: "1:948439120882:web:1553728c80891ca2a3496b"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const productsRef = database.ref('Products');
+        const vendorProductsRef = database.ref('VendorProducts');
+
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+
+        function updateCartCount() {
+            const countElem = document.getElementById('cart-count');
+            if (countElem) {
+                countElem.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+            }
+        }
+
+        function goHome() {
+            window.location.href = 'index.html';
+        }
+
+        function goToCart() {
+            window.location.href = 'index.html';
+        }
+
+        // جلب معرّف المنتج والبيانات من الرابط
+        const urlParams = new URLSearchParams(window.location.search);
+        const productId = urlParams.get('id');
+        const sellerId = urlParams.get('vendor');
+        const type = urlParams.get('type');
+        const isVendorProduct = (type === 'vendor') || (sellerId && sellerId.length > 0);
+
+        // دالة لجلب المنتج من المصدر الصحيح
+        async function fetchProduct() {
+            if (!productId) {
+                return null;
+            }
+
+            let product = null;
+            let productSource = '';
+            let actualSellerId = null;
+
+            // حاول الجلب من منتجات البائعين
+            if (isVendorProduct && sellerId) {
+                try {
+                    const snap = await vendorProductsRef.child(`${sellerId}/${productId}`).once('value');
+                    if (snap.exists()) {
+                        product = snap.val();
+                        productSource = 'vendor';
+                        actualSellerId = sellerId;
+                    }
+                } catch (e) {
+                    console.error('خطأ في جلب منتج البائع:', e);
+                }
+            }
+
+            // لو ما لقيناش، نجيب من المنتجات الرئيسية
+            if (!product) {
+                try {
+                    const snap = await productsRef.child(productId).once('value');
+                    if (snap.exists()) {
+                        product = snap.val();
+                        productSource = 'main';
+                        actualSellerId = null;
+                    }
+                } catch (e) {
+                    console.error('خطأ في جلب المنتج الرئيسي:', e);
+                }
+            }
+
+            if (product) {
+                product.productId = productId;
+                product.sellerId = actualSellerId;
+                product.source = productSource;
+            }
+
+            return { product, productSource, sellerId: actualSellerId };
+        }
+
+        // دالة لجلب بيانات البائع من users
+        async function fetchSellerData(sellerUid) {
+            if (!sellerUid) return null;
+            try {
+                const snap = await database.ref(`users/${sellerUid}`).once('value');
+                const userData = snap.val();
+                if (userData) {
+                    return {
+                        storeName: userData.storeName || userData.email?.split('@')[0] || 'تاجر',
+                        email: userData.email,
+                        role: userData.role,
+                        rating: userData.rating || '0.0',
+                        reviews_count: userData.reviews_count || 0
+                    };
+                }
+                return null;
+            } catch (e) {
+                console.error('خطأ في جلب بيانات البائع:', e);
+                return null;
+            }
+        }
+
+        // دالة لعرض المنتج
+        async function displayProduct() {
+            const container = document.getElementById('product-details');
+            const result = await fetchProduct();
+            const product = result?.product;
+            const productSource = result?.productSource;
+            const sellerUid = result?.sellerId;
+
+            if (!product) {
+                container.innerHTML = '<div class="error">❌ المنتج غير موجود</div>';
+                return;
+            }
+
+            // جلب بيانات البائع إذا كان المنتج من بائع
+            let sellerHtml = '';
+            let sellerData = null;
+            if (productSource === 'vendor' && sellerUid) {
+                sellerData = await fetchSellerData(sellerUid);
+                if (sellerData) {
+                    sellerHtml = `
+                        <div class="seller-info">
+                            <div>
+                                <span style="color:#94a3b8;">🛍️ متجر: </span>
+                                <a onclick="viewSellerStore('${sellerUid}')" class="seller-name">${sellerData.storeName}</a>
+                            </div>
+                            <div>
+                                <span class="seller-badge">⭐ ${sellerData.rating} (${sellerData.reviews_count} تقييم)</span>
+                            </div>
+                        </div>
+                    `;
+                }
+            }
+
+            // صورة المنتج
+            let imageHtml = '';
+            if (product.thumbnail && product.thumbnail.trim()) {
+                imageHtml = `<div class="product-image"><img src="${product.thumbnail}" alt="${product.name}" onerror="this.src='data:image/svg+xml,%3Csvg xmlns=\'http://www.w3.org/2000/svg\' width=\'200\' height=\'200\'%3E%3Crect width=\'200\' height=\'200\' fill=\'%23f5f7fa\'/%3E%3Ctext x=\'100\' y=\'120\' font-size=\'60\' text-anchor=\'middle\' fill=\'%23ff9900\'%3E📦%3C/text%3E%3C/svg%3E'"></div>`;
+            } else {
+                imageHtml = '<div class="product-image"><div style="height:200px; display:flex; align-items:center; justify-content:center;"><span style="font-size:60px; color:var(--secondary);">📦</span></div></div>';
+            }
+
+            const stock = product.stock || 0;
+
+            container.innerHTML = `
+                ${sellerHtml}
+                ${imageHtml}
+                <div class="product-name">${escapeHtml(product.name) || 'منتج'}</div>
+                <div class="product-price">${product.price || 0} EGP</div>
+                <div class="product-stock">⏳ الكمية المتوفرة: ${stock}</div>
+                <div class="product-desc">${escapeHtml(product.desc) || 'لا يوجد وصف'}</div>
+                <div class="quantity-section">
+                    <span style="color:var(--text);">الكمية:</span>
+                    <input type="number" id="product-quantity" class="quantity-input" value="1" min="1" max="${stock}">
+                </div>
+                <button class="add-to-cart-btn" onclick="addToCartFromPage()" ${stock <= 0 ? 'disabled' : ''}>
+                    ${stock <= 0 ? '❌ نفذ من المخزون' : '🛒 أضف للسلة'}
+                </button>
+            `;
+
+            // إضافة رابط للعودة لمتجر البائع
+            const backLinksDiv = document.querySelector('.back-links');
+            if (productSource === 'vendor' && sellerUid) {
+                if (!document.getElementById('sellerBackLink')) {
+                    const sellerLink = document.createElement('a');
+                    sellerLink.id = 'sellerBackLink';
+                    sellerLink.onclick = () => viewSellerStore(sellerUid);
+                    sellerLink.textContent = '← العودة لمتجر البائع';
+                    sellerLink.style.cursor = 'pointer';
+                    backLinksDiv.insertBefore(sellerLink, backLinksDiv.firstChild);
+                }
+            } else {
+                const existingLink = document.getElementById('sellerBackLink');
+                if (existingLink) existingLink.remove();
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        function viewSellerStore(sellerUid) {
+            if (sellerUid) {
+                window.location.href = `index.html?vendor=${sellerUid}`;
+            }
+        }
+
+        async function addToCartFromPage() {
+            const quantity = parseInt(document.getElementById('product-quantity').value) || 1;
+            const result = await fetchProduct();
+            const product = result?.product;
+            const productSource = result?.productSource;
+            const sellerUid = result?.sellerId;
+
+            if (!product) return;
+
+            if (product.stock <= 0) {
+                alert('⚠️ نفذت الكمية');
+                return;
+            }
+
+            const existing = cart.find(item => item.uniqueId === `product_${productId}_${sellerUid || 'main'}`);
+            const currentQty = existing ? existing.quantity : 0;
+            if (currentQty + quantity > product.stock) {
+                alert(`⚠️ الكمية المتوفرة فقط ${product.stock}`);
+                return;
+            }
+
+            const cartProduct = {
+                uniqueId: `product_${productId}_${sellerUid || 'main'}`,
+                originalId: productId,
+                name: product.name,
+                price: product.price,
+                stock: product.stock,
+                quantity: quantity,
+                source: productSource,
+                vendorId: sellerUid
+            };
+
+            if (existing) {
+                existing.quantity += quantity;
+            } else {
+                cart.push(cartProduct);
+            }
+
+            localStorage.setItem('cart', JSON.stringify(cart));
+            updateCartCount();
+            alert(`✅ تمت إضافة ${product.name} (${quantity} قطعة) للسلة`);
+        }
+
+        // تشغيل العرض
+        if (!productId) {
+            document.getElementById('product-details').innerHTML = '<div class="error">❌ المنتج غير موجود</div>';
+        } else {
+            displayProduct();
+        }
+
+        updateCartCount();
+    </script>
+</body>
+</html>

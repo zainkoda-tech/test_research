@@ -1,0 +1,459 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>قائمة التجار - مول التجار</title>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-auth.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.0/firebase-database.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        :root {
+            --primary: #1e2a3a;
+            --secondary: #ff9900;
+            --background: #f5f7fa;
+            --text: #1e293b;
+            --card-bg: #ffffff;
+            --button: #ff9900;
+            --button-hover: #e88a00;
+            --border: #e2e8f0;
+            --success: #10b981;
+            --danger: #ef4444;
+            --info: #3b82f6;
+            --warning: #f59e0b;
+        }
+        body { background: var(--background); min-height: 100vh; padding: 20px; color: var(--text); }
+        .header { background: var(--primary); padding: 15px 30px; border-radius: 15px; margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 10px; }
+        .logo { font-size: 24px; font-weight: bold; color: var(--secondary); cursor: pointer; }
+        .nav-links { display: flex; gap: 15px; flex-wrap: wrap; }
+        .nav-links a { color: white; text-decoration: none; padding: 5px 10px; border-radius: 5px; }
+        .nav-links a:hover { background: var(--secondary); color: var(--primary); }
+        .cart-btn { background: var(--button); color: var(--primary); border: none; padding: 8px 15px; border-radius: 25px; font-weight: bold; cursor: pointer; }
+
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        .stat-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            text-align: center;
+            border: 1px solid var(--border);
+        }
+        .stat-number {
+            font-size: 32px;
+            font-weight: bold;
+            color: var(--secondary);
+        }
+        .stat-label {
+            color: #94a3b8;
+            font-size: 14px;
+            margin-top: 5px;
+        }
+
+        .filters {
+            background: var(--card-bg);
+            padding: 15px;
+            border-radius: 15px;
+            margin-bottom: 20px;
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+            align-items: center;
+        }
+        .filter-select {
+            padding: 8px 15px;
+            border-radius: 8px;
+            border: 1px solid var(--border);
+            background: var(--background);
+            color: var(--text);
+        }
+
+        .sellers-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .seller-card {
+            background: var(--card-bg);
+            border-radius: 15px;
+            padding: 20px;
+            border: 1px solid var(--border);
+            transition: all 0.3s ease;
+        }
+        .seller-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1);
+        }
+        .seller-header {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+        .seller-avatar {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background: var(--secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 28px;
+        }
+        .seller-info {
+            flex: 1;
+        }
+        .seller-name {
+            font-size: 18px;
+            font-weight: bold;
+            color: var(--text);
+        }
+        .seller-role {
+            font-size: 12px;
+            padding: 3px 10px;
+            border-radius: 20px;
+            display: inline-block;
+            margin-top: 5px;
+        }
+        .role-trial { background: var(--warning); color: white; }
+        .role-seller_monthly { background: var(--success); color: white; }
+        .role-seller_yearly { background: var(--info); color: white; }
+        .role-owner { background: var(--secondary); color: var(--primary); }
+        .role-user { background: #94a3b8; color: white; }
+
+        .seller-details {
+            margin: 15px 0;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+        .seller-details div {
+            margin: 6px 0;
+        }
+        .seller-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 15px;
+            flex-wrap: wrap;
+        }
+        .action-btn {
+            flex: 1;
+            padding: 8px;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: bold;
+            text-align: center;
+            text-decoration: none;
+            display: inline-block;
+        }
+        .btn-view { background: var(--info); color: white; }
+        .btn-edit { background: var(--warning); color: white; }
+        .btn-delete { background: var(--danger); color: white; }
+        .btn-upgrade { background: var(--success); color: white; }
+
+        .loading { text-align: center; padding: 50px; color: var(--text); }
+        .error { text-align: center; padding: 50px; color: var(--danger); }
+        .no-data { text-align: center; padding: 50px; color: #94a3b8; }
+        .back-home { margin-top: 20px; text-align: center; }
+        .back-home a { color: var(--secondary); text-decoration: none; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo" onclick="goHome()">🛍️ مول التجار</div>
+        <div class="nav-links">
+            <a href="index.html">الرئيسية</a>
+            <a href="services.html">خدمات</a>
+            <a href="my-store.html">متجري</a>
+            <a href="upgrade.html">ترقية</a>
+            <a href="sellers.html">التجار</a>
+        </div>
+        <div>
+            <button onclick="goToCart()" class="cart-btn">🛒 (<span id="cart-count">0</span>)</button>
+        </div>
+    </div>
+
+    <div class="stats-container" id="statsContainer">
+        <div class="stat-card"><div class="stat-number" id="totalSellers">0</div><div class="stat-label">إجمالي التجار</div></div>
+        <div class="stat-card"><div class="stat-number" id="activeSellers">0</div><div class="stat-label">تجار نشطين</div></div>
+        <div class="stat-card"><div class="stat-number" id="totalProducts">0</div><div class="stat-label">إجمالي المنتجات</div></div>
+        <div class="stat-card"><div class="stat-number" id="monthlyRevenue">0</div><div class="stat-label">اشتراكات شهرية</div></div>
+    </div>
+
+    <div class="filters">
+        <select id="roleFilter" class="filter-select" onchange="loadSellers()">
+            <option value="all">كل الأدوار</option>
+            <option value="trial">تجريبي</option>
+            <option value="seller_monthly">شهري</option>
+            <option value="seller_yearly">سنوي</option>
+            <option value="owner">مالك</option>
+            <option value="user">مستخدم عادي</option>
+        </select>
+        <button onclick="refreshSellers()" style="background:var(--secondary); color:var(--primary); border:none; padding:8px 20px; border-radius:8px; cursor:pointer;">🔄 تحديث</button>
+        <span id="statusMsg" style="color:var(--success); font-size:14px;"></span>
+    </div>
+
+    <div id="sellersGrid" class="sellers-grid">
+        <div class="loading">⏳ جاري تحميل التجار...</div>
+    </div>
+
+    <div class="back-home">
+        <a href="index.html">← العودة للرئيسية</a>
+    </div>
+
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyAbWuJ8CP3Sdq7KLGewsQEVMlG6viq7R1Y",
+            authDomain: "g10-sovereign.firebaseapp.com",
+            databaseURL: "https://g10-sovereign-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "g10-sovereign",
+            storageBucket: "g10-sovereign.firebasestorage.app",
+            messagingSenderId: "948439120882",
+            appId: "1:948439120882:web:1553728c80891ca2a3496b"
+        };
+
+        firebase.initializeApp(firebaseConfig);
+        const database = firebase.database();
+        const auth = firebase.auth();
+
+        let cart = JSON.parse(localStorage.getItem('cart')) || [];
+        let currentUser = null;
+        let currentUserRole = null;
+
+        function goHome() { window.location.href = 'index.html'; }
+        function goToCart() { window.location.href = 'index.html'; }
+
+        function updateCartCount() {
+            const countElem = document.getElementById('cart-count');
+            if (countElem) {
+                countElem.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+            }
+        }
+
+        async function loadSellers() {
+            const roleFilter = document.getElementById('roleFilter').value;
+            const statusSpan = document.getElementById('statusMsg');
+            statusSpan.innerHTML = '⏳ جاري التحميل...';
+
+            try {
+                // جلب المستخدمين من users
+                const usersSnap = await database.ref('users').once('value');
+                const users = usersSnap.val() || {};
+
+                // جلب منتجات التجار
+                const vendorSnap = await database.ref('VendorProducts').once('value');
+                const vendorProducts = vendorSnap.val() || {};
+
+                // حساب عدد المنتجات لكل تاجر
+                const productCount = {};
+                Object.keys(vendorProducts).forEach(uid => {
+                    productCount[uid] = Object.keys(vendorProducts[uid] || {}).length;
+                });
+
+                // تصفية التجار (أي مستخدم دوره ليس user عادي)
+                const sellersList = [];
+                Object.keys(users).forEach(uid => {
+                    const user = users[uid];
+                    const role = user.role || 'user';
+                    // نعتبر التاجر هو أي مستخدم دوره ليس 'user' عادي
+                    const isSeller = role !== 'user' && role !== undefined;
+                    if (!isSeller) return;
+
+                    if (roleFilter !== 'all' && role !== roleFilter) return;
+
+                    sellersList.push({
+                        uid: uid,
+                        email: user.email || 'غير متوفر',
+                        role: role,
+                        storeName: user.storeName || user.email?.split('@')[0] || 'بائع',
+                        phone: user.phone || 'غير متوفر',
+                        location: user.location || 'غير محدد',
+                        rating: user.rating || '0.0',
+                        reviews_count: user.reviews_count || 0,
+                        created_at: user.created_at,
+                        trial_end: user.trial_end,
+                        subscription_end: user.subscription_end,
+                        products_count: productCount[uid] || 0
+                    });
+                });
+
+                // تحديث الإحصائيات
+                const totalSellers = sellersList.length;
+                const activeSellers = sellersList.filter(s =>
+                    s.role === 'seller_monthly' || s.role === 'seller_yearly'
+                ).length;
+                const totalProducts = Object.values(productCount).reduce((a, b) => a + b, 0);
+                const monthlySubs = sellersList.filter(s => s.role === 'seller_monthly').length;
+
+                document.getElementById('totalSellers').textContent = totalSellers;
+                document.getElementById('activeSellers').textContent = activeSellers;
+                document.getElementById('totalProducts').textContent = totalProducts;
+                document.getElementById('monthlyRevenue').textContent = monthlySubs;
+
+                // عرض التجار
+                const grid = document.getElementById('sellersGrid');
+                grid.innerHTML = '';
+
+                if (sellersList.length === 0) {
+                    grid.innerHTML = '<div class="no-data">📭 لا يوجد تجار مطابقين للفلتر</div>';
+                    statusSpan.innerHTML = '✅ جاهز';
+                    return;
+                }
+
+                sellersList.forEach(seller => {
+                    let roleClass = '';
+                    let roleText = '';
+                    switch(seller.role) {
+                        case 'trial': roleClass = 'role-trial'; roleText = 'تجريبي'; break;
+                        case 'seller_monthly': roleClass = 'role-seller_monthly'; roleText = 'شهري'; break;
+                        case 'seller_yearly': roleClass = 'role-seller_yearly'; roleText = 'سنوي'; break;
+                        case 'owner': roleClass = 'role-owner'; roleText = 'مالك'; break;
+                        default: roleClass = 'role-user'; roleText = 'مستخدم';
+                    }
+
+                    const isAdmin = currentUserRole === 'owner';
+                    const createdDate = seller.created_at ? new Date(seller.created_at).toLocaleDateString('ar-EG') : '--';
+
+                    grid.innerHTML += `
+                        <div class="seller-card" data-uid="${seller.uid}">
+                            <div class="seller-header">
+                                <div class="seller-avatar">🛍️</div>
+                                <div class="seller-info">
+                                    <div class="seller-name">${escapeHtml(seller.storeName)}</div>
+                                    <span class="seller-role ${roleClass}">${roleText}</span>
+                                </div>
+                            </div>
+                            <div class="seller-details">
+                                <div>📧 ${escapeHtml(seller.email)}</div>
+                                <div>📞 ${escapeHtml(seller.phone)}</div>
+                                <div>📍 ${escapeHtml(seller.location)}</div>
+                                <div>⭐ ${seller.rating} (${seller.reviews_count} تقييم)</div>
+                                <div>📦 ${seller.products_count} منتج</div>
+                                <div>📅 عضو منذ ${createdDate}</div>
+                                ${seller.role === 'trial' ? `<div>⏳ ينتهي التجربة: ${new Date(seller.trial_end).toLocaleDateString('ar-EG')}</div>` : ''}
+                                ${seller.role === 'seller_monthly' || seller.role === 'seller_yearly' ? `<div>📅 ينتهي الاشتراك: ${new Date(seller.subscription_end).toLocaleDateString('ar-EG')}</div>` : ''}
+                            </div>
+                            <div class="seller-actions">
+                                <a href="index.html?vendor=${seller.uid}" class="action-btn btn-view">👁️ عرض منتجات التاجر</a>
+                                ${isAdmin ? `<button onclick="editSeller('${seller.uid}', '${escapeHtml(seller.storeName)}', '${escapeHtml(seller.phone)}', '${escapeHtml(seller.location)}')" class="action-btn btn-edit">✏️ تعديل</button>` : ''}
+                                ${isAdmin ? `<button onclick="deleteSeller('${seller.uid}')" class="action-btn btn-delete">🗑️ حذف</button>` : ''}
+                                ${isAdmin && seller.role !== 'owner' ? `<button onclick="upgradeSeller('${seller.uid}', '${seller.role}')" class="action-btn btn-upgrade">⬆️ ترقية</button>` : ''}
+                            </div>
+                        </div>
+                    `;
+                });
+
+                statusSpan.innerHTML = `✅ تم تحميل ${sellersList.length} تاجر`;
+            } catch (error) {
+                console.error('خطأ:', error);
+                document.getElementById('sellersGrid').innerHTML = '<div class="error">❌ حدث خطأ في تحميل البيانات</div>';
+                statusSpan.innerHTML = '❌ خطأ في التحميل';
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            });
+        }
+
+        async function refreshSellers() {
+            loadSellers();
+        }
+
+        function editSeller(uid, currentName, currentPhone, currentLocation) {
+            const newName = prompt('أدخل اسم المتجر الجديد:', currentName);
+            if (!newName) return;
+            const newPhone = prompt('أدخل رقم الهاتف الجديد:', currentPhone);
+            if (!newPhone) return;
+            const newLocation = prompt('أدخل المنطقة الجديدة:', currentLocation);
+            if (!newLocation) return;
+
+            database.ref('users/' + uid).update({
+                storeName: newName,
+                phone: newPhone,
+                location: newLocation
+            }).then(() => {
+                alert('✅ تم تحديث بيانات التاجر');
+                loadSellers();
+            }).catch(e => alert('❌ خطأ: ' + e.message));
+        }
+
+        function deleteSeller(uid) {
+            if (!confirm('⚠️ هل أنت متأكد من حذف هذا التاجر؟ سيتم حذف جميع منتجاته.')) return;
+
+            Promise.all([
+                database.ref('users/' + uid).update({ role: 'user' }), // تحويله لمستخدم عادي بدل حذفه
+                database.ref('VendorProducts/' + uid).remove() // حذف منتجاته
+            ]).then(() => {
+                alert('✅ تم إلغاء صلاحيات التاجر وحذف منتجاته');
+                loadSellers();
+            }).catch(e => alert('❌ خطأ: ' + e.message));
+        }
+
+        function upgradeSeller(uid, currentRole) {
+            const newRole = prompt('أدخل الدور الجديد:\n- trial (تجريبي)\n- seller_monthly (شهري)\n- seller_yearly (سنوي)\n- owner (مالك)',
+                currentRole === 'trial' ? 'seller_monthly' :
+                currentRole === 'seller_monthly' ? 'seller_yearly' : 'owner');
+
+            if (!newRole) return;
+
+            const validRoles = ['trial', 'seller_monthly', 'seller_yearly', 'owner'];
+            if (!validRoles.includes(newRole)) {
+                alert('⚠️ دور غير صالح');
+                return;
+            }
+
+            const updates = { role: newRole };
+            if (newRole === 'trial') {
+                updates.trial_end = Date.now() + (30 * 24 * 60 * 60 * 1000);
+                updates.products_limit = 5;
+            }
+            if (newRole === 'seller_monthly' || newRole === 'seller_yearly') {
+                const endDate = new Date();
+                if (newRole === 'seller_monthly') endDate.setMonth(endDate.getMonth() + 1);
+                else endDate.setFullYear(endDate.getFullYear() + 1);
+                updates.subscription_end = endDate.toISOString();
+                updates.subscription_start = new Date().toISOString();
+            }
+
+            database.ref('users/' + uid).update(updates).then(() => {
+                alert(`✅ تم ترقية التاجر إلى ${newRole}`);
+                loadSellers();
+            }).catch(e => alert('❌ خطأ: ' + e.message));
+        }
+
+        // التحقق من صلاحيات المستخدم
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                database.ref('users/' + user.uid).once('value').then(snap => {
+                    const userData = snap.val() || {};
+                    currentUserRole = userData.role || 'user';
+                    if (currentUserRole !== 'owner') {
+                        document.getElementById('statusMsg').innerHTML = '⚠️ هذه الصفحة للمالك فقط';
+                        document.getElementById('sellersGrid').innerHTML = '<div class="no-data">🔒 هذه الصفحة مخصصة للمالك فقط. يرجى تسجيل الدخول بحساب مالك.</div>';
+                    } else {
+                        loadSellers();
+                    }
+                });
+            } else {
+                document.getElementById('statusMsg').innerHTML = '⚠️ يجب تسجيل الدخول';
+                document.getElementById('sellersGrid').innerHTML = '<div class="no-data">🔒 يرجى <a href="index.html" style="color:var(--secondary);">تسجيل الدخول</a> لعرض هذه الصفحة.</div>';
+            }
+        });
+
+        updateCartCount();
+    </script>
+</body>
+</html>
