@@ -134,7 +134,7 @@ firebase deploy --only hosting
 Access your store
 
 text
-https://your-project.web.app
+https://g10-sovereign.web.app/
 Desktop Version (Python EXE)
 Install Python 3.9+
 
