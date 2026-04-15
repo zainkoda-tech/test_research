@@ -198,7 +198,7 @@ Orders writable by customers and admins
 
 📱 Usage
 Web Version
-Open https://your-project.web.app
+Open https://g10-sovereign.web.app/
 
 Register as a new user
 
